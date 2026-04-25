@@ -23,8 +23,7 @@ class SupplementsScreen extends StatelessWidget {
                   itemCount: liste.length,
                   itemBuilder: (_, i) {
                     final s = liste[i];
-                    final ing = prov.getIngredient(s.ingredientId);
-                    return Card(
+                                    return Card(
                       margin: const EdgeInsets.only(bottom: 8),
                       child: ListTile(
                         leading: const CircleAvatar(
@@ -32,9 +31,7 @@ class SupplementsScreen extends StatelessWidget {
                           child: Icon(Icons.add_circle, color: Colors.white, size: 18),
                         ),
                         title: Text(s.nom, style: const TextStyle(fontWeight: FontWeight.bold)),
-                        subtitle: Text(
-                            'Prix: ${s.prix.toStringAsFixed(3)} DT | '
-                            'Ingrédient: ${ing?.nom ?? '?'} (${s.quantiteUtilisee} ${ing?.unite ?? ''})'),
+                        subtitle: Text('Prix: ${s.prix.toStringAsFixed(3)} DT'),
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -76,9 +73,6 @@ class SupplementsScreen extends StatelessWidget {
     final prov = context.read<AppProvider>();
     final nomCtrl = TextEditingController(text: sup?.nom ?? '');
     final prixCtrl = TextEditingController(text: sup?.prix.toString() ?? '');
-    final qteCtrl = TextEditingController(text: sup?.quantiteUtilisee.toString() ?? '');
-    // initialValue au lieu de value (deprecated)
-    String? selectedIngId = sup?.ingredientId;
     final formKey = GlobalKey<FormState>();
 
     showDialog(
@@ -119,27 +113,7 @@ class SupplementsScreen extends StatelessWidget {
                     return null;
                   },
                 ),
-                const SizedBox(height: 8),
-                // DropdownButtonFormField sans 'value' deprecated — utilise initialValue via key
-                DropdownButtonFormField<String>(
-                  key: ValueKey(selectedIngId),
-                  initialValue: selectedIngId,
-                  decoration: const InputDecoration(
-                      labelText: 'Ingrédient', border: OutlineInputBorder()),
-                  items: prov.ingredients
-                      .map((i) => DropdownMenuItem(value: i.id, child: Text(i.nom)))
-                      .toList(),
-                  onChanged: (v) => setS(() => selectedIngId = v),
-                  validator: (v) => v == null ? 'Sélectionner un ingrédient' : null,
-                ),
-                const SizedBox(height: 8),
-                TextFormField(
-                  controller: qteCtrl,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                      labelText: 'Quantité utilisée', border: OutlineInputBorder()),
-                  validator: (v) => v?.isEmpty == true ? 'Requis' : null,
-                ),
+
               ]),
             ),
           ),
@@ -153,8 +127,8 @@ class SupplementsScreen extends StatelessWidget {
                   id: sup?.id ?? prov.newId(),
                   nom: nomCtrl.text.trim(),
                   prix: double.tryParse(prixCtrl.text.replaceAll(',', '.')) ?? 0,
-                  ingredientId: selectedIngId!,
-                  quantiteUtilisee: double.tryParse(qteCtrl.text.replaceAll(',', '.')) ?? 0,
+                  ingredientId: '',
+                  quantiteUtilisee: 0,
                 );
                 if (sup == null) {
                   await prov.ajouterSupplement(newSup);

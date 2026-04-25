@@ -2,7 +2,6 @@
 import 'package:flutter/material.dart';
 import 'stats_screen.dart';
 import 'ventes_screen.dart';
-import 'ingredients_screen.dart';
 import 'supplements_screen.dart';
 import 'categories_screen.dart';
 import 'produits_screen.dart';
@@ -23,7 +22,6 @@ class _AdminScreenState extends State<AdminScreen> {
     _NavItem(Icons.bar_chart,      'Statistiques', StatsScreen()),
     _NavItem(Icons.receipt_long,   'Ventes',        VentesScreen()),
     _NavItem(Icons.summarize,      'Z-Rapport',     ZRapportScreen()),
-    _NavItem(Icons.inventory_2,    'Ingrédients',   IngredientsScreen()),
     _NavItem(Icons.add_circle_outline, 'Suppléments', SupplementsScreen()),
     _NavItem(Icons.category,       'Catégories',    CategoriesScreen()),
     _NavItem(Icons.fastfood,       'Produits',      ProduitsScreen()),

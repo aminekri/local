@@ -357,4 +357,19 @@ class DatabaseService {
       'par_produit': parProduit,
     };
   }
+  // =================== TOP PRODUITS ===================
+  static Future<List<Map<String, dynamic>>> getTopProduits({int limit = 10}) async {
+    final d = await db;
+    return d.rawQuery('''
+      SELECT p.nom,
+             SUM(lc.quantite) as qte,
+             SUM(lc.quantite * p.prix) as montant
+      FROM lignes_commande lc
+      JOIN tickets t ON t.id = lc.ticketId
+      JOIN produits p ON p.id = lc.produitId
+      GROUP BY p.id
+      ORDER BY qte DESC
+      LIMIT ?
+    ''', [limit]);
+  }
 }

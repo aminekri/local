@@ -92,7 +92,7 @@ class _ProduitsScreenState extends State<ProduitsScreen> {
                         title: Text(p.nom,
                             style: const TextStyle(fontWeight: FontWeight.bold)),
                         subtitle: Text(
-                            '${p.prix.toStringAsFixed(3)} DT | ${cat?.nom ?? '?'} | ${p.ingredients.length} ingrédients'),
+                            '${p.prix.toStringAsFixed(3)} DT | ${cat?.nom ?? '?'}'),
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -152,8 +152,6 @@ class _ProduitFormDialogState extends State<_ProduitFormDialog> {
   late final TextEditingController _nomCtrl;
   late final TextEditingController _prixCtrl;
   String? _categorieId;
-  List<IngredientProduit> _ingredients = [];
-
   @override
   void initState() {
     super.initState();
@@ -161,7 +159,6 @@ class _ProduitFormDialogState extends State<_ProduitFormDialog> {
     _prixCtrl =
         TextEditingController(text: widget.produit?.prix.toString() ?? '');
     _categorieId = widget.produit?.categorieId;
-    _ingredients = widget.produit?.ingredients.toList() ?? [];
   }
 
   @override
@@ -241,34 +238,7 @@ class _ProduitFormDialogState extends State<_ProduitFormDialog> {
                   validator: (v) =>
                       v == null ? 'Sélectionner une catégorie' : null,
                 ),
-                const SizedBox(height: 16),
-                const Text('Ingrédients utilisés:',
-                    style: TextStyle(fontWeight: FontWeight.bold)),
-                const SizedBox(height: 8),
-                ..._ingredients.asMap().entries.map((e) {
-                  final ip = e.value;
-                  final ing = prov.getIngredient(ip.ingredientId);
-                  return Card(
-                    margin: const EdgeInsets.only(bottom: 4),
-                    child: ListTile(
-                      dense: true,
-                      title: Text(ing?.nom ?? '?'),
-                      subtitle: Text(
-                          'Qté: ${ip.quantiteUtilisee} ${ing?.unite ?? ''}'),
-                      trailing: IconButton(
-                        icon: const Icon(Icons.remove_circle,
-                            color: Colors.red, size: 20),
-                        onPressed: () =>
-                            setState(() => _ingredients.removeAt(e.key)),
-                      ),
-                    ),
-                  );
-                }),
-                TextButton.icon(
-                  onPressed: () => _ajouterIngredient(context, prov),
-                  icon: const Icon(Icons.add),
-                  label: const Text('Ajouter ingrédient'),
-                ),
+
               ],
             ),
           ),
@@ -287,7 +257,7 @@ class _ProduitFormDialogState extends State<_ProduitFormDialog> {
               nom: _nomCtrl.text.trim(),
               prix: double.tryParse(_prixCtrl.text.replaceAll(',', '.')) ?? 0,
               categorieId: _categorieId!,
-              ingredients: _ingredients,
+              ingredients: [],
             );
             if (widget.produit == null) {
               await prov.ajouterProduit(p);
@@ -304,57 +274,4 @@ class _ProduitFormDialogState extends State<_ProduitFormDialog> {
     );
   }
 
-  void _ajouterIngredient(BuildContext context, AppProvider prov) {
-    String? ingId;
-    final qteCtrl = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder: (_) => StatefulBuilder(
-        builder: (ctx, setS) => AlertDialog(
-          title: const Text('Ajouter ingrédient'),
-          content: Column(mainAxisSize: MainAxisSize.min, children: [
-            DropdownButtonFormField<String>(
-              key: ValueKey(ingId),
-              initialValue: ingId,
-              decoration: const InputDecoration(
-                  labelText: 'Ingrédient', border: OutlineInputBorder()),
-              items: prov.ingredients
-                  .map((i) => DropdownMenuItem(value: i.id, child: Text(i.nom)))
-                  .toList(),
-              onChanged: (v) => setS(() => ingId = v),
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: qteCtrl,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                  labelText: 'Quantité utilisée', border: OutlineInputBorder()),
-            ),
-          ]),
-          actions: [
-            TextButton(
-                onPressed: () => Navigator.pop(ctx),
-                child: const Text('Annuler')),
-            ElevatedButton(
-              onPressed: () {
-                if (ingId != null && qteCtrl.text.isNotEmpty) {
-                  setState(() => _ingredients.add(IngredientProduit(
-                        ingredientId: ingId!,
-                        quantiteUtilisee:
-                            double.tryParse(qteCtrl.text) ?? 0,
-                      )));
-                  Navigator.pop(ctx);
-                }
-              },
-              style:
-                  ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2D3561)),
-              child:
-                  const Text('Ajouter', style: TextStyle(color: Colors.white)),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }

@@ -307,24 +307,14 @@ class _CaisseScreenState extends State<CaisseScreen> {
   }
 
   Widget _buildProduitCard(Produit p) {
-    final prov = context.read<AppProvider>();
-    final enRupture = p.ingredients.any((ip) {
-      final ing = prov.getIngredient(ip.ingredientId);
-      return ing != null &&
-          ing.estImportant &&
-          ing.quantite < ip.quantiteUtilisee;
-    });
-
     // Afficher la quantité pré-saisie sur la carte si buffer non vide
     final qteLabel = _qteBuffer.isNotEmpty ? '×$_qteBuffer' : '';
 
     return GestureDetector(
-      onTap: enRupture
-          ? () => _showErreur('Stock insuffisant pour "${p.nom}"')
-          : () => _ajouterProduit(p),
+      onTap: () => _ajouterProduit(p),
       child: Container(
         decoration: BoxDecoration(
-          color: enRupture ? Colors.grey.shade100 : Colors.white,
+          color: Colors.white,
           borderRadius: BorderRadius.circular(10),
           boxShadow: [
             BoxShadow(
@@ -333,9 +323,6 @@ class _CaisseScreenState extends State<CaisseScreen> {
               offset: const Offset(0, 2),
             )
           ],
-          border: enRupture
-              ? Border.all(color: Colors.red.shade200)
-              : null,
         ),
         child: Padding(
           padding: const EdgeInsets.all(6),
@@ -360,12 +347,10 @@ class _CaisseScreenState extends State<CaisseScreen> {
                   ),
                 )
               else
-                Icon(
+                const Icon(
                   Icons.fastfood,
                   size: 28,
-                  color: enRupture
-                      ? Colors.grey.shade400
-                      : const Color(0xFF2D3561),
+                  color: Color(0xFF2D3561),
                 ),
               const SizedBox(height: 4),
               Text(
@@ -373,28 +358,22 @@ class _CaisseScreenState extends State<CaisseScreen> {
                 textAlign: TextAlign.center,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(
+                style: const TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 12,
-                  color: enRupture
-                      ? Colors.grey.shade500
-                      : Colors.black87,
+                  color: Colors.black87,
                 ),
               ),
               const SizedBox(height: 2),
               Text(
                 '${_fmt.format(p.prix)} DT',
-                style: TextStyle(
-                  color: enRupture
-                      ? Colors.grey
-                      : const Color(0xFFE94560),
+                style: const TextStyle(
+                  color: Color(0xFFE94560),
                   fontWeight: FontWeight.bold,
                   fontSize: 11,
                 ),
               ),
-              if (enRupture)
-                const Text('Rupture',
-                    style: TextStyle(color: Colors.red, fontSize: 9)),
+
             ],
           ),
         ),
@@ -789,8 +768,6 @@ class _CaisseScreenState extends State<CaisseScreen> {
   // ── Barre Total ─────────────────────────────────────────────────────────────
   Widget _buildTotalBar(AppProvider prov, {required bool isWide}) {
     final total = prov.totalCommande;
-    final tva = total - (total / 1.19);
-    final ht = total / 1.19;
     final btnVPadding = isWide ? 11.0 : 7.0;
     final totalFontSize = isWide ? 20.0 : 17.0;
     final labelFontSize = isWide ? 15.0 : 13.0;
@@ -813,19 +790,7 @@ class _CaisseScreenState extends State<CaisseScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('HT: ${_fmt.format(ht)} DT',
-                  style: const TextStyle(
-                      color: Colors.white54, fontSize: 10)),
-              Text('TVA 19%: ${_fmt.format(tva)} DT',
-                  style: const TextStyle(
-                      color: Colors.white54, fontSize: 10)),
-            ],
-          ),
-          const SizedBox(height: 3),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('TOTAL TTC:',
+              Text('TOTAL:',
                   style: TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,

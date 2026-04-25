@@ -254,6 +254,8 @@ class AppProvider extends ChangeNotifier {
   Future<List<Map<String, dynamic>>> getVentesParJour(int nbJours) =>
       DatabaseService.getVentesParJour(nbJours);
   Future<Map<String, dynamic>> getZRapport() => DatabaseService.getZRapport();
+  Future<List<Map<String, dynamic>>> getTopProduits({int limit = 10}) =>
+      DatabaseService.getTopProduits(limit: limit);
 
   String newId() => _uuid.v4();
 }
