@@ -344,7 +344,7 @@ class _ZRapportScreenState extends State<ZRapportScreen> {
       final pdf = pw.Document();
 
       final boldStyle = pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 13); // ignore: prefer_const_constructors
-      final bold11    = pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 11); // ignore: prefer_const_constructors
+      
       final bold12    = pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 12); // ignore: prefer_const_constructors
       final normal    = pw.TextStyle(fontSize: 10); // ignore: prefer_const_constructors
       final small     = pw.TextStyle(fontSize: 9);  // ignore: prefer_const_constructors

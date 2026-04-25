@@ -75,7 +75,7 @@ class VentesScreen extends StatelessWidget {
                     Expanded(
                       child: Text(
                         'Le numéro de ticket est remis à 1 automatiquement '
-                        'lors de l'impression du Z-Rapport.',
+                        'lors de l\'impression du Z-Rapport.',
                         style:
                             TextStyle(color: Colors.white54, fontSize: 11),
                       ),
