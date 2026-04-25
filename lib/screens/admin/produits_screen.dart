@@ -1,9 +1,9 @@
 // lib/screens/admin/produits_screen.dart
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../providers/app_provider.dart';
 import '../../models/models.dart';
+import '../../utils/numpad_utils.dart';
 
 class ProduitsScreen extends StatefulWidget {
   const ProduitsScreen({super.key});
@@ -152,12 +152,12 @@ class _ProduitFormDialogState extends State<_ProduitFormDialog> {
   late final TextEditingController _nomCtrl;
   late final TextEditingController _prixCtrl;
   String? _categorieId;
+
   @override
   void initState() {
     super.initState();
-    _nomCtrl = TextEditingController(text: widget.produit?.nom ?? '');
-    _prixCtrl =
-        TextEditingController(text: widget.produit?.prix.toString() ?? '');
+    _nomCtrl  = TextEditingController(text: widget.produit?.nom ?? '');
+    _prixCtrl = TextEditingController(text: widget.produit?.prix.toString() ?? '');
     _categorieId = widget.produit?.categorieId;
   }
 
@@ -174,7 +174,7 @@ class _ProduitFormDialogState extends State<_ProduitFormDialog> {
     return AlertDialog(
       title: Text(widget.produit == null ? 'Ajouter produit' : 'Modifier produit'),
       content: SizedBox(
-        width: 500,
+        width: 420,
         child: SingleChildScrollView(
           child: Form(
             key: _formKey,
@@ -182,49 +182,32 @@ class _ProduitFormDialogState extends State<_ProduitFormDialog> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Nom (clavier texte standard)
                 TextFormField(
                   controller: _nomCtrl,
+                  textCapitalization: TextCapitalization.sentences,
                   decoration: const InputDecoration(
-                      labelText: 'Nom du produit', border: OutlineInputBorder()),
+                    labelText: 'Nom du produit',
+                    border: OutlineInputBorder(),
+                  ),
                   validator: (v) => v?.isEmpty == true ? 'Requis' : null,
                 ),
-                const SizedBox(height: 8),
-                TextFormField(
+                const SizedBox(height: 12),
+                // Prix — NumpadFormField (icône dialpad + clavier PC)
+                NumpadFormField(
                   controller: _prixCtrl,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                    signed: false,
-                  ),
-                  inputFormatters: [
-                    FilteringTextInputFormatter.allow(
-                      RegExp(r'[0-9.,]'),
-                    ),
-                  ],
-                  decoration: const InputDecoration(
-                    labelText: 'Prix (DT)',
-                    border: OutlineInputBorder(),
-                    hintText: 'Ex: 8.500',
-                    suffixText: 'DT',
-                  ),
+                  label: 'Prix (DT)',
+                  decimal: true,
+                  hintText: 'Ex: 8.500',
+                  suffixText: 'DT',
                   validator: (v) {
                     if (v == null || v.isEmpty) return 'Requis';
                     final val = double.tryParse(v.replaceAll(',', '.'));
                     if (val == null || val < 0) return 'Prix invalide';
                     return null;
                   },
-                  onChanged: (v) {
-                    // Normaliser virgule → point pour la saisie mobile
-                    if (v.contains(',')) {
-                      final cursor = _prixCtrl.selection;
-                      _prixCtrl.value = _prixCtrl.value.copyWith(
-                        text: v.replaceAll(',', '.'),
-                        selection: cursor,
-                      );
-                    }
-                  },
                 ),
-                const SizedBox(height: 8),
-                // initialValue au lieu de value (deprecated)
+                const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
                   key: ValueKey(_categorieId),
                   initialValue: _categorieId,
@@ -238,7 +221,6 @@ class _ProduitFormDialogState extends State<_ProduitFormDialog> {
                   validator: (v) =>
                       v == null ? 'Sélectionner une catégorie' : null,
                 ),
-
               ],
             ),
           ),
@@ -266,12 +248,13 @@ class _ProduitFormDialogState extends State<_ProduitFormDialog> {
             }
             if (context.mounted) Navigator.pop(context);
           },
-          style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2D3561)),
-          child: Text(widget.produit == null ? 'Ajouter' : 'Modifier',
+          style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF2D3561)),
+          child: Text(
+              widget.produit == null ? 'Ajouter' : 'Modifier',
               style: const TextStyle(color: Colors.white)),
         ),
       ],
     );
   }
-
 }

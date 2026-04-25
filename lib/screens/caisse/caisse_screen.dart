@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../providers/app_provider.dart';
 import '../../models/models.dart';
 import '../../utils/ticket_service.dart';
+import '../../utils/numpad_utils.dart';
 
 class CaisseScreen extends StatefulWidget {
   const CaisseScreen({super.key});

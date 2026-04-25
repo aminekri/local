@@ -1,9 +1,9 @@
 // lib/screens/admin/supplements_screen.dart
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../providers/app_provider.dart';
 import '../../models/models.dart';
+import '../../utils/numpad_utils.dart';
 
 class SupplementsScreen extends StatelessWidget {
   const SupplementsScreen({super.key});
@@ -23,25 +23,30 @@ class SupplementsScreen extends StatelessWidget {
                   itemCount: liste.length,
                   itemBuilder: (_, i) {
                     final s = liste[i];
-                                    return Card(
+                    return Card(
                       margin: const EdgeInsets.only(bottom: 8),
                       child: ListTile(
                         leading: const CircleAvatar(
                           backgroundColor: Color(0xFF2D3561),
-                          child: Icon(Icons.add_circle, color: Colors.white, size: 18),
+                          child: Icon(Icons.add_circle,
+                              color: Colors.white, size: 18),
                         ),
-                        title: Text(s.nom, style: const TextStyle(fontWeight: FontWeight.bold)),
+                        title: Text(s.nom,
+                            style:
+                                const TextStyle(fontWeight: FontWeight.bold)),
                         subtitle: Text('Prix: ${s.prix.toStringAsFixed(3)} DT'),
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             IconButton(
-                              icon: const Icon(Icons.edit, color: Color(0xFF2D3561)),
+                              icon: const Icon(Icons.edit,
+                                  color: Color(0xFF2D3561)),
                               onPressed: () => _showForm(context, sup: s),
                             ),
                             IconButton(
                               icon: const Icon(Icons.delete, color: Colors.red),
-                              onPressed: () async => prov.supprimerSupplement(s.id),
+                              onPressed: () async =>
+                                  prov.supprimerSupplement(s.id),
                             ),
                           ],
                         ),
@@ -57,7 +62,8 @@ class SupplementsScreen extends StatelessWidget {
             child: ElevatedButton.icon(
               onPressed: () => _showForm(context),
               icon: const Icon(Icons.add, color: Colors.white),
-              label: const Text('Ajouter un supplément', style: TextStyle(color: Colors.white)),
+              label: const Text('Ajouter un supplément',
+                  style: TextStyle(color: Colors.white)),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF2D3561),
                 padding: const EdgeInsets.symmetric(vertical: 12),
@@ -70,10 +76,10 @@ class SupplementsScreen extends StatelessWidget {
   }
 
   void _showForm(BuildContext context, {Supplement? sup}) {
-    final prov = context.read<AppProvider>();
-    final nomCtrl = TextEditingController(text: sup?.nom ?? '');
+    final prov    = context.read<AppProvider>();
+    final nomCtrl  = TextEditingController(text: sup?.nom ?? '');
     final prixCtrl = TextEditingController(text: sup?.prix.toString() ?? '');
-    final formKey = GlobalKey<FormState>();
+    final formKey  = GlobalKey<FormState>();
 
     showDialog(
       context: context,
@@ -86,26 +92,19 @@ class SupplementsScreen extends StatelessWidget {
               child: Column(mainAxisSize: MainAxisSize.min, children: [
                 TextFormField(
                   controller: nomCtrl,
+                  textCapitalization: TextCapitalization.sentences,
                   decoration: const InputDecoration(
                       labelText: 'Nom', border: OutlineInputBorder()),
                   validator: (v) => v?.isEmpty == true ? 'Requis' : null,
                 ),
-                const SizedBox(height: 8),
-                TextFormField(
+                const SizedBox(height: 12),
+                // Prix avec numpad
+                NumpadFormField(
                   controller: prixCtrl,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                    signed: false,
-                  ),
-                  inputFormatters: [
-                    FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
-                  ],
-                  decoration: const InputDecoration(
-                    labelText: 'Prix (DT)',
-                    border: OutlineInputBorder(),
-                    hintText: 'Ex: 1.500',
-                    suffixText: 'DT',
-                  ),
+                  label: 'Prix (DT)',
+                  decimal: true,
+                  hintText: 'Ex: 1.500',
+                  suffixText: 'DT',
                   validator: (v) {
                     if (v == null || v.isEmpty) return 'Requis';
                     final val = double.tryParse(v.replaceAll(',', '.'));
@@ -113,13 +112,13 @@ class SupplementsScreen extends StatelessWidget {
                     return null;
                   },
                 ),
-
               ]),
             ),
           ),
           actions: [
             TextButton(
-                onPressed: () => Navigator.pop(ctx), child: const Text('Annuler')),
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Annuler')),
             ElevatedButton(
               onPressed: () async {
                 if (!formKey.currentState!.validate()) return;
@@ -137,7 +136,8 @@ class SupplementsScreen extends StatelessWidget {
                 }
                 if (ctx.mounted) Navigator.pop(ctx);
               },
-              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2D3561)),
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF2D3561)),
               child: Text(sup == null ? 'Ajouter' : 'Modifier',
                   style: const TextStyle(color: Colors.white)),
             ),

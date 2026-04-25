@@ -1,5 +1,5 @@
 // lib/screens/admin/z_rapport_screen.dart
-// Z-Rapport journalier conforme réglementation tunisienne (DGI Tunisie)
+// Z-Rapport journalier
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
@@ -20,9 +20,9 @@ class _ZRapportScreenState extends State<ZRapportScreen> {
   bool _loading = true;
   bool _impression = false;
 
-  final _fmt = NumberFormat('#,##0.000', 'fr_TN');
+  final _fmt         = NumberFormat('#,##0.000', 'fr_TN');
   final _fmtDateHeure = DateFormat('dd/MM/yyyy HH:mm:ss', 'fr_TN');
-  final _fmtJour = DateFormat('dd/MM/yyyy', 'fr_TN');
+  final _fmtJour     = DateFormat('dd/MM/yyyy', 'fr_TN');
 
   @override
   void initState() {
@@ -43,55 +43,36 @@ class _ZRapportScreenState extends State<ZRapportScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_loading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-    if (_rapport == null) {
-      return const Center(child: Text('Erreur de chargement'));
-    }
+    if (_loading) return const Center(child: CircularProgressIndicator());
+    if (_rapport == null) return const Center(child: Text('Erreur de chargement'));
 
-    final r = _rapport!;
-    final parProduit = (r['par_produit'] as List?)
-            ?.cast<Map<String, dynamic>>() ??
-        <Map<String, dynamic>>[];
-    final config = context.read<AppProvider>().config;
-    final nbTickets = r['nb_tickets'] as int? ?? 0;
-    final totalTtc = (r['total_ttc'] as num?)?.toDouble() ?? 0.0;
-    final totalHt = (r['total_ht'] as num?)?.toDouble() ?? 0.0;
-    final totalTva = (r['total_tva'] as num?)?.toDouble() ?? 0.0;
-    final date = r['date'] as DateTime? ?? DateTime.now();
+    final r           = _rapport!;
+    final parProduit  = (r['par_produit'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+    final config      = context.read<AppProvider>().config;
+    final nbTickets   = r['nb_tickets'] as int? ?? 0;
+    final totalTtc    = (r['total_ttc'] as num?)?.toDouble() ?? 0.0;
+    final date        = r['date'] as DateTime? ?? DateTime.now();
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // ── En-tête ─────────────────────────────────
           _buildEnTete(config, date),
           const SizedBox(height: 16),
-
-          // ── Totaux ──────────────────────────────────
-          _buildTotaux(nbTickets, totalHt, totalTva, totalTtc),
+          _buildTotaux(nbTickets, totalTtc),
           const SizedBox(height: 12),
-
-          // ── Ventes par produit ───────────────────────
           _buildParProduit(parProduit),
           const SizedBox(height: 16),
-
-          // ── Boutons ─────────────────────────────────
-          _buildBoutons(r, config, nbTickets, totalHt, totalTva, totalTtc,
-              parProduit, date),
+          _buildBoutons(config, nbTickets, totalTtc, parProduit, date),
           const SizedBox(height: 12),
-
-          // ── Note légale ─────────────────────────────
           _buildNoteLegale(),
         ],
       ),
     );
   }
 
-  // ─── Widgets de section ────────────────────────────
-
+  // ─── En-tête ────────────────────────────────────────────────────────────────
   Widget _buildEnTete(Map<String, String> config, DateTime date) {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -119,18 +100,18 @@ class _ZRapportScreenState extends State<ZRapportScreen> {
           ),
           const SizedBox(height: 8),
           _infoLigne('Date du rapport', _fmtJour.format(date)),
-          _infoLigne('Généré le', _fmtDateHeure.format(DateTime.now())),
+          _infoLigne('Généré le',       _fmtDateHeure.format(DateTime.now())),
           const Divider(color: Colors.white24, height: 16),
-          _infoLigne('Restaurant', config['nom_restaurant'] ?? '—'),
-          _infoLigne('Adresse', config['adresse'] ?? '—'),
-          _infoLigne('Matricule Fiscal', config['mf'] ?? '—'),
+          _infoLigne('Restaurant',      config['nom_restaurant'] ?? '—'),
+          _infoLigne('Adresse',         config['adresse'] ?? '—'),
+          _infoLigne('Matricule Fiscal',config['mf'] ?? '—'),
         ],
       ),
     );
   }
 
-  Widget _buildTotaux(
-      int nbTickets, double totalHt, double totalTva, double totalTtc) {
+  // ─── Totaux (SANS TVA) ──────────────────────────────────────────────────────
+  Widget _buildTotaux(int nbTickets, double total) {
     return Card(
       elevation: 2,
       child: Padding(
@@ -152,26 +133,15 @@ class _ZRapportScreenState extends State<ZRapportScreen> {
               '$nbTickets',
               icone: Icons.confirmation_num_outlined,
             ),
-            const SizedBox(height: 8),
-            _totalLigne(
-              'Total HT',
-              '${_fmt.format(totalHt)} DT',
-              icone: Icons.calculate_outlined,
-            ),
-            _totalLigne(
-              'TVA 19%',
-              '${_fmt.format(totalTva)} DT',
-              icone: Icons.percent,
-              couleur: Colors.orange.shade700,
-            ),
             const Divider(),
-            _totalLigneGras('TOTAL TTC', '${_fmt.format(totalTtc)} DT'),
+            _totalLigneGras('TOTAL', '${_fmt.format(total)} DT'),
           ],
         ),
       ),
     );
   }
 
+  // ─── Ventes par produit ─────────────────────────────────────────────────────
   Widget _buildParProduit(List<Map<String, dynamic>> parProduit) {
     return Card(
       elevation: 2,
@@ -192,96 +162,45 @@ class _ZRapportScreenState extends State<ZRapportScreen> {
             if (parProduit.isEmpty)
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 8),
-                child: Text(
-                  'Aucune vente aujourd\'hui',
-                  style: TextStyle(color: Colors.grey),
-                ),
+                child: Text('Aucune vente aujourd\'hui',
+                    style: TextStyle(color: Colors.grey)),
               )
             else ...[
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 4),
                 child: Row(
                   children: [
-                    Expanded(
-                      child: Text(
-                        'Produit',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: Colors.grey,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    SizedBox(
-                      width: 40,
-                      child: Text(
-                        'Qté',
+                    Expanded(child: Text('Produit',
+                        style: TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.bold))),
+                    SizedBox(width: 40, child: Text('Qté',
                         textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: Colors.grey,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    SizedBox(
-                      width: 90,
-                      child: Text(
-                        'Montant',
+                        style: TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.bold))),
+                    SizedBox(width: 90, child: Text('Montant',
                         textAlign: TextAlign.right,
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: Colors.grey,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
+                        style: TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.bold))),
                   ],
                 ),
               ),
               ...parProduit.asMap().entries.map((e) {
-                final p = e.value;
+                final p       = e.value;
                 final montant = (p['montant'] as num?)?.toDouble() ?? 0.0;
                 return Container(
                   decoration: BoxDecoration(
-                    color: e.key.isEven
-                        ? Colors.grey.shade50
-                        : Colors.white,
+                    color: e.key.isEven ? Colors.grey.shade50 : Colors.white,
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                        vertical: 6, horizontal: 4),
+                    padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
                     child: Row(
                       children: [
-                        Expanded(
-                          child: Text(
-                            p['nom'] as String? ?? '',
-                            style: const TextStyle(fontSize: 13),
-                          ),
-                        ),
-                        SizedBox(
-                          width: 40,
-                          child: Text(
-                            '×${p['qte']}',
+                        Expanded(child: Text(p['nom'] as String? ?? '',
+                            style: const TextStyle(fontSize: 13))),
+                        SizedBox(width: 40, child: Text('×${p['qte']}',
                             textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey.shade600,
-                            ),
-                          ),
-                        ),
-                        SizedBox(
-                          width: 90,
-                          child: Text(
-                            '${_fmt.format(montant)} DT',
+                            style: TextStyle(fontSize: 12, color: Colors.grey.shade600))),
+                        SizedBox(width: 90, child: Text('${_fmt.format(montant)} DT',
                             textAlign: TextAlign.right,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
+                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600))),
                       ],
                     ),
                   ),
@@ -294,13 +213,11 @@ class _ZRapportScreenState extends State<ZRapportScreen> {
     );
   }
 
+  // ─── Boutons ────────────────────────────────────────────────────────────────
   Widget _buildBoutons(
-    Map<String, dynamic> r,
     Map<String, String> config,
     int nbTickets,
-    double totalHt,
-    double totalTva,
-    double totalTtc,
+    double total,
     List<Map<String, dynamic>> parProduit,
     DateTime date,
   ) {
@@ -312,8 +229,7 @@ class _ZRapportScreenState extends State<ZRapportScreen> {
             icon: const Icon(Icons.refresh),
             label: const Text('Actualiser'),
             style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 12),
-            ),
+                padding: const EdgeInsets.symmetric(vertical: 12)),
           ),
         ),
         const SizedBox(width: 12),
@@ -321,24 +237,11 @@ class _ZRapportScreenState extends State<ZRapportScreen> {
           child: ElevatedButton.icon(
             onPressed: _impression
                 ? null
-                : () => _imprimerZRapport(
-                      config,
-                      nbTickets,
-                      totalHt,
-                      totalTva,
-                      totalTtc,
-                      parProduit,
-                      date,
-                    ),
+                : () => _imprimerZRapport(config, nbTickets, total, parProduit, date),
             icon: _impression
                 ? const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.white,
-                    ),
-                  )
+                    width: 16, height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                 : const Icon(Icons.print),
             label: Text(_impression ? 'Impression...' : 'Imprimer Z'),
             style: ElevatedButton.styleFrom(
@@ -367,9 +270,8 @@ class _ZRapportScreenState extends State<ZRapportScreen> {
           SizedBox(width: 8),
           Expanded(
             child: Text(
-              'Le Z-Rapport est un document fiscal obligatoire (DGI Tunisie). '
-              'Il doit être imprimé et archivé en fin de chaque journée. '
-              'Réf. : Art. 18 du Code de la TVA.',
+              'Le Z-Rapport est un document journalier obligatoire. '
+              'Il doit être imprimé et archivé en fin de chaque journée.',
               style: TextStyle(fontSize: 11, color: Colors.brown),
             ),
           ),
@@ -378,33 +280,23 @@ class _ZRapportScreenState extends State<ZRapportScreen> {
     );
   }
 
-  // ─── Widgets helper ────────────────────────────────
-
+  // ─── Helpers ────────────────────────────────────────────────────────────────
   Widget _infoLigne(String label, String val) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 3),
       child: Row(
         children: [
-          SizedBox(
-            width: 110,
-            child: Text(
-              label,
-              style: const TextStyle(color: Colors.white54, fontSize: 11),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              val,
-              style: const TextStyle(color: Colors.white70, fontSize: 12),
-            ),
-          ),
+          SizedBox(width: 120,
+              child: Text(label,
+                  style: const TextStyle(color: Colors.white54, fontSize: 11))),
+          Expanded(child: Text(val,
+              style: const TextStyle(color: Colors.white70, fontSize: 12))),
         ],
       ),
     );
   }
 
-  Widget _totalLigne(String label, String val,
-      {IconData? icone, Color? couleur}) {
+  Widget _totalLigne(String label, String val, {IconData? icone, Color? couleur}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
@@ -413,19 +305,10 @@ class _ZRapportScreenState extends State<ZRapportScreen> {
             Icon(icone, size: 16, color: couleur ?? Colors.grey.shade500),
             const SizedBox(width: 6),
           ],
-          Expanded(
-            child: Text(
-              label,
-              style: TextStyle(color: couleur ?? Colors.grey.shade700),
-            ),
-          ),
-          Text(
-            val,
-            style: TextStyle(
-              fontWeight: FontWeight.w600,
-              color: couleur,
-            ),
-          ),
+          Expanded(child: Text(label,
+              style: TextStyle(color: couleur ?? Colors.grey.shade700))),
+          Text(val,
+              style: TextStyle(fontWeight: FontWeight.w600, color: couleur)),
         ],
       ),
     );
@@ -436,33 +319,23 @@ class _ZRapportScreenState extends State<ZRapportScreen> {
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         children: [
-          Expanded(
-            child: Text(
-              label,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-            ),
-          ),
-          Text(
-            val,
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
-              color: Color(0xFF2D3561),
-            ),
-          ),
+          Expanded(child: Text(label,
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15))),
+          Text(val,
+              style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  color: Color(0xFF2D3561))),
         ],
       ),
     );
   }
 
-  // ─── Impression PDF ────────────────────────────────
-
+  // ─── Impression PDF (SANS TVA) ──────────────────────────────────────────────
   Future<void> _imprimerZRapport(
     Map<String, String> config,
     int nbTickets,
-    double totalHt,
-    double totalTva,
-    double totalTtc,
+    double total,
     List<Map<String, dynamic>> parProduit,
     DateTime date,
   ) async {
@@ -470,120 +343,61 @@ class _ZRapportScreenState extends State<ZRapportScreen> {
     try {
       final pdf = pw.Document();
 
-      // Styles PDF (pw.TextStyle ne supporte pas const)
-      final boldStyle =
-          pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 13); // ignore: prefer_const_constructors
-      final bold11 =
-          pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 11); // ignore: prefer_const_constructors
-      final normalStyle = pw.TextStyle(fontSize: 10); // ignore: prefer_const_constructors
-      final smallStyle = pw.TextStyle(fontSize: 9); // ignore: prefer_const_constructors
-      final tinyStyle = pw.TextStyle(fontSize: 8); // ignore: prefer_const_constructors
+      final boldStyle = pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 13); // ignore: prefer_const_constructors
+      final bold11    = pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 11); // ignore: prefer_const_constructors
+      final bold12    = pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 12); // ignore: prefer_const_constructors
+      final normal    = pw.TextStyle(fontSize: 10); // ignore: prefer_const_constructors
+      final small     = pw.TextStyle(fontSize: 9);  // ignore: prefer_const_constructors
+      final tiny      = pw.TextStyle(fontSize: 8);  // ignore: prefer_const_constructors
 
       pdf.addPage(
         pw.Page(
           pageFormat: PdfPageFormat(80 * PdfPageFormat.mm, double.infinity), // ignore: prefer_const_constructors
-          margin: pw.EdgeInsets.symmetric(horizontal: 6, vertical: 8), // ignore: prefer_const_constructors
+          margin: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 8),
           build: (ctx) => pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.stretch,
             children: [
-              pw.Center(
-                child: pw.Text('*** Z - RAPPORT ***', style: boldStyle),
-              ),
+              pw.Center(child: pw.Text('*** Z - RAPPORT ***', style: boldStyle)),
               pw.SizedBox(height: 3),
-              pw.Center(
-                child: pw.Text(
-                  config['nom_restaurant'] ?? '',
-                  style: pw.TextStyle(fontWeight: pw.FontWeight.bold), // ignore: prefer_const_constructors
-                ),
-              ),
-              pw.Center(
-                child: pw.Text(config['adresse'] ?? '', style: tinyStyle),
-              ),
-              pw.Center(
-                child: pw.Text(
-                  'MF: ${config['mf'] ?? ''}',
-                  style: tinyStyle,
-                ),
-              ),
+              pw.Center(child: pw.Text(config['nom_restaurant'] ?? '',
+                  style: pw.TextStyle(fontWeight: pw.FontWeight.bold))), // ignore: prefer_const_constructors
+              if ((config['adresse'] ?? '').isNotEmpty)
+                pw.Center(child: pw.Text(config['adresse']!, style: tiny)),
+              if ((config['mf'] ?? '').isNotEmpty)
+                pw.Center(child: pw.Text('MF: ${config['mf']}', style: tiny)),
               pw.Divider(),
-              _pdfLigne('Date:', _fmtJour.format(date), normalStyle),
-              _pdfLigne(
-                'Imprimé:',
-                _fmtDateHeure.format(DateTime.now()),
-                normalStyle,
-              ),
+              _pdfLigne('Date:',     _fmtJour.format(date), normal),
+              _pdfLigne('Imprimé:', _fmtDateHeure.format(DateTime.now()), normal),
               pw.Divider(),
-              pw.Text(
-                'RÉCAPITULATIF',
-                style: pw.TextStyle( // ignore: prefer_const_constructors
-                  fontWeight: pw.FontWeight.bold,
-                  fontSize: 11,
-                ),
-              ),
+              pw.Text('RÉCAPITULATIF',
+                  style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 11)), // ignore: prefer_const_constructors
               pw.SizedBox(height: 4),
-              _pdfLigne('Nb tickets:', '$nbTickets', normalStyle),
-              _pdfLigne(
-                'Total HT:',
-                '${_fmt.format(totalHt)} DT',
-                normalStyle,
-              ),
-              _pdfLigne(
-                'TVA 19%:',
-                '${_fmt.format(totalTva)} DT',
-                normalStyle,
-              ),
+              _pdfLigne('Nb tickets:', '$nbTickets', normal),
               pw.Divider(),
-              _pdfLigneGras(
-                'TOTAL TTC:',
-                '${_fmt.format(totalTtc)} DT',
-                bold11,
-              ),
+              _pdfLigneGras('TOTAL:', '${_fmt.format(total)} DT', bold12),
               pw.Divider(),
-              pw.Text(
-                'VENTES PAR PRODUIT',
-                style: pw.TextStyle( // ignore: prefer_const_constructors
-                  fontWeight: pw.FontWeight.bold,
-                  fontSize: 11,
-                ),
-              ),
+              pw.Text('VENTES PAR PRODUIT',
+                  style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 11)), // ignore: prefer_const_constructors
               pw.SizedBox(height: 4),
               if (parProduit.isEmpty)
-                pw.Text('Aucune vente', style: smallStyle)
+                pw.Text('Aucune vente', style: small)
               else
-                ...parProduit.map(
-                  (p) => pw.Padding(
-                    padding: pw.EdgeInsets.only(bottom: 2), // ignore: prefer_const_constructors
-                    child: pw.Row(
-                      mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                      children: [
-                        pw.Expanded(
-                          child: pw.Text(
-                            '${p['nom']} ×${p['qte']}',
-                            style: smallStyle,
-                          ),
-                        ),
-                        pw.Text(
+                ...parProduit.map((p) => pw.Padding(
+                  padding: const pw.EdgeInsets.only(bottom: 2),
+                  child: pw.Row(
+                    mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                    children: [
+                      pw.Expanded(child: pw.Text(
+                          '${p['nom']} ×${p['qte']}', style: small)),
+                      pw.Text(
                           '${_fmt.format((p['montant'] as num?)?.toDouble() ?? 0)} DT',
-                          style: smallStyle,
-                        ),
-                      ],
-                    ),
+                          style: small),
+                    ],
                   ),
-                ),
+                )),
               pw.Divider(),
               pw.SizedBox(height: 4),
-              pw.Center(
-                child: pw.Text(
-                  'Document fiscal — À conserver',
-                  style: tinyStyle,
-                ),
-              ),
-              pw.Center(
-                child: pw.Text(
-                  'www.impots.finances.gov.tn',
-                  style: tinyStyle,
-                ),
-              ),
+              pw.Center(child: pw.Text('Document journalier — À conserver', style: tiny)),
             ],
           ),
         ),
@@ -591,30 +405,20 @@ class _ZRapportScreenState extends State<ZRapportScreen> {
 
       await Printing.layoutPdf(onLayout: (_) async => pdf.save());
 
-      // ── Reset automatique du numéro de ticket après impression Z ──
-      // Conforme à la réglementation tunisienne : le Z-Rapport clôture
-      // la journée et le compteur repart à 1 le lendemain.
       if (mounted) {
         await context.read<AppProvider>().resetNumeroTicketSeulement();
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Row(
-              children: [
-                Icon(Icons.check_circle, color: Colors.white, size: 18),
-                SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Z-Rapport imprimé — Numéro de ticket remis à 1',
-                    style: TextStyle(color: Colors.white),
-                  ),
-                ),
-              ],
-            ),
+            content: Row(children: [
+              Icon(Icons.check_circle, color: Colors.white, size: 18),
+              SizedBox(width: 8),
+              Expanded(child: Text('Z-Rapport imprimé — N° ticket remis à 1',
+                  style: TextStyle(color: Colors.white))),
+            ]),
             backgroundColor: Colors.green,
             duration: Duration(seconds: 4),
           ),
         );
-        // Recharger les données pour afficher le nouveau N° de ticket
         await _charger();
       }
     } finally {
@@ -625,20 +429,14 @@ class _ZRapportScreenState extends State<ZRapportScreen> {
   pw.Widget _pdfLigne(String label, String val, pw.TextStyle style) {
     return pw.Row(
       mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-      children: [
-        pw.Text(label, style: style),
-        pw.Text(val, style: style),
-      ],
+      children: [pw.Text(label, style: style), pw.Text(val, style: style)],
     );
   }
 
   pw.Widget _pdfLigneGras(String label, String val, pw.TextStyle style) {
     return pw.Row(
       mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-      children: [
-        pw.Text(label, style: style),
-        pw.Text(val, style: style),
-      ],
+      children: [pw.Text(label, style: style), pw.Text(val, style: style)],
     );
   }
 }
