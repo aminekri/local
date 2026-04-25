@@ -1,0 +1,31 @@
+name: Générer Windows EXE
+
+on:
+  push:
+    branches: [ main ] # Se déclenche à chaque fois que vous "poussez" du code sur main
+  workflow_dispatch: # Permet de lancer la compilation manuellement
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout du code
+        uses: actions/checkout@v4
+
+      - name: Installation de Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+
+      - name: Installation des dépendances
+        run: flutter pub get
+
+      - name: Build Windows (Release)
+        run: flutter build windows --release
+
+      - name: Upload de l'application (Artifact)
+        uses: actions/upload-artifact@v4
+        with:
+          name: mon-application-windows
+          path: build/windows/x64/runner/Release/
