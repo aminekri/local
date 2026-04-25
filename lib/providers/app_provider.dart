@@ -143,6 +143,18 @@ class AppProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Ajoute une ligne avec une quantité directe (flux pré-saisie)
+  void ajouterProduitAvecQuantite(Produit produit, int quantite) {
+    final erreur = verifierStockProduit(produit, quantite);
+    if (erreur != null) throw Exception(erreur);
+    _lignesCommande.add(LigneCommande(
+      id: _uuid.v4(),
+      produit: produit,
+      quantite: quantite,
+    ));
+    notifyListeners();
+  }
+
   void supprimerLigne(String ligneId) {
     _lignesCommande.removeWhere((l) => l.id == ligneId);
     notifyListeners();
