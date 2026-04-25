@@ -1,11 +1,16 @@
 // lib/utils/numpad_utils.dart
-// Numpad réutilisable — fonctionne touch ET clavier PC
+// Numpad tactile optimisé — grands boutons rectangulaires pour tablette
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+/// Couleurs globales du thème
+const _kPrimary   = Color(0xFF1A1A2E);
+const _kAccent    = Color(0xFF2D3561);
+const _kErase     = Color(0xFFD84315);
+const _kConfirm   = Color(0xFF2E7D32);
+const _kDot       = Color(0xFF455A64);
+
 /// Affiche un numpad modal et retourne la valeur saisie (ou null si annulé).
-/// [decimal] : autorise le point décimal
-/// [label]   : libellé affiché en titre
 Future<String?> showNumpadInput(
   BuildContext context, {
   String initialValue = '',
@@ -45,7 +50,6 @@ class _NumpadDialogState extends State<_NumpadDialog> {
   void initState() {
     super.initState();
     _valeur = widget.initialValue;
-    // Capture le clavier PC dès l'ouverture
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _focusNode.requestFocus();
     });
@@ -59,9 +63,7 @@ class _NumpadDialogState extends State<_NumpadDialog> {
 
   void _append(String ch) {
     setState(() {
-      // Empêcher double point décimal
       if (ch == '.' && _valeur.contains('.')) return;
-      // Remplacer '0' seul par le chiffre
       if (_valeur == '0' && ch != '.') {
         _valeur = ch;
         return;
@@ -86,7 +88,6 @@ class _NumpadDialogState extends State<_NumpadDialog> {
     Navigator.pop(context, _valeur.isEmpty ? null : _valeur);
   }
 
-  // Touche clavier PC → même logique que les boutons tactiles
   void _handleKey(KeyEvent event) {
     if (event is! KeyDownEvent) return;
     final char = event.character;
@@ -113,119 +114,172 @@ class _NumpadDialogState extends State<_NumpadDialog> {
     return KeyboardListener(
       focusNode: _focusNode,
       onKeyEvent: _handleKey,
-      child: AlertDialog(
-        titlePadding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-        contentPadding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-        title: Text(widget.label,
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
-        content: SizedBox(
-          width: 280,
+      child: Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Container(
+          width: 340,
+          padding: const EdgeInsets.all(20),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // ── Afficheur ──────────────────────────────────────────────
+              // Titre
+              Text(
+                widget.label,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: _kPrimary,
+                ),
+              ),
+              const SizedBox(height: 14),
+
+              // Afficheur
               Container(
                 width: double.infinity,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1A1A2E),
-                  borderRadius: BorderRadius.circular(8),
+                  color: _kPrimary,
+                  borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
                   isEmpty ? '0' : _valeur,
                   textAlign: TextAlign.right,
                   style: TextStyle(
                     color: isEmpty ? Colors.white38 : Colors.white,
-                    fontSize: 28,
+                    fontSize: 36,
                     fontWeight: FontWeight.bold,
-                    letterSpacing: 1,
+                    letterSpacing: 2,
                   ),
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
 
-              // ── Grille numpad ──────────────────────────────────────────
+              // Grille numpad
               _buildGrille(),
+              const SizedBox(height: 14),
+
+              // Boutons Annuler / OK
+              Row(
+                children: [
+                  Expanded(
+                    child: _TouchBtn(
+                      label: 'Annuler',
+                      color: Colors.grey.shade200,
+                      textColor: Colors.black87,
+                      height: 52,
+                      fontSize: 15,
+                      onTap: () => Navigator.pop(context, null),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    flex: 2,
+                    child: _TouchBtn(
+                      label: 'Confirmer ✓',
+                      color: _kConfirm,
+                      textColor: Colors.white,
+                      height: 52,
+                      fontSize: 15,
+                      onTap: isEmpty ? null : _confirmer,
+                    ),
+                  ),
+                ],
+              ),
             ],
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, null),
-            child: const Text('Annuler'),
-          ),
-          ElevatedButton(
-            onPressed: isEmpty ? null : _confirmer,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF2D3561),
-            ),
-            child:
-                const Text('OK', style: TextStyle(color: Colors.white)),
-          ),
-        ],
       ),
     );
   }
 
   Widget _buildGrille() {
-    // Disposition : 1 2 3 / 4 5 6 / 7 8 9 / [.] 0 [⌫]
     final rows = [
-      ['1', '2', '3'],
-      ['4', '5', '6'],
       ['7', '8', '9'],
+      ['4', '5', '6'],
+      ['1', '2', '3'],
       [widget.decimal ? '.' : '', '0', '⌫'],
     ];
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: rows.map((row) {
-        return Row(
-          children: row.map((key) {
-            if (key.isEmpty) {
-              return const Expanded(child: SizedBox(height: 52));
-            }
-            final isErase = key == '⌫';
-            final isDot = key == '.';
-            return Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(3),
-                child: SizedBox(
-                  height: 52,
-                  child: ElevatedButton(
-                    onPressed: () {
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Row(
+            children: row.map((key) {
+              if (key.isEmpty) {
+                return const Expanded(child: SizedBox());
+              }
+              final isErase = key == '⌫';
+              final isDot   = key == '.';
+              return Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: _TouchBtn(
+                    label: key,
+                    color: isErase ? _kErase : isDot ? _kDot : _kAccent,
+                    textColor: Colors.white,
+                    height: 62,
+                    fontSize: 24,
+                    onTap: () {
                       if (isErase) {
                         _effacer();
                       } else {
                         _append(key);
                       }
                     },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: isErase
-                          ? Colors.orange.shade700
-                          : isDot
-                              ? Colors.grey.shade600
-                              : const Color(0xFF2D3561),
-                      padding: EdgeInsets.zero,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    child: Text(
-                      key,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
                   ),
                 ),
-              ),
-            );
-          }).toList(),
+              );
+            }).toList(),
+          ),
         );
       }).toList(),
+    );
+  }
+}
+
+/// Bouton tactile unifié — grand rectangle avec retour visuel
+class _TouchBtn extends StatelessWidget {
+  final String label;
+  final Color color;
+  final Color textColor;
+  final double height;
+  final double fontSize;
+  final VoidCallback? onTap;
+
+  const _TouchBtn({
+    required this.label,
+    required this.color,
+    required this.textColor,
+    required this.height,
+    required this.fontSize,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: onTap == null ? Colors.grey.shade300 : color,
+      borderRadius: BorderRadius.circular(8),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(8),
+        onTap: onTap,
+        splashColor: Colors.white24,
+        child: SizedBox(
+          height: height,
+          child: Center(
+            child: Text(
+              label,
+              style: TextStyle(
+                color: onTap == null ? Colors.grey.shade500 : textColor,
+                fontSize: fontSize,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -252,55 +306,44 @@ class NumpadFormField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return TextFormField(
-      controller: controller,
-      // Clavier numérique mobile/tactile
-      keyboardType: TextInputType.numberWithOptions(
-        decimal: decimal,
-        signed: false,
-      ),
-      inputFormatters: [
-        FilteringTextInputFormatter.allow(
-          decimal ? RegExp(r'[0-9.,]') : RegExp(r'[0-9]'),
+    return GestureDetector(
+      onTap: () async {
+        FocusScope.of(context).unfocus();
+        final result = await showNumpadInput(
+          context,
+          initialValue: controller.text.replaceAll(',', '.'),
+          decimal: decimal,
+          label: label,
+        );
+        if (result != null) {
+          controller.text = result;
+        }
+      },
+      child: AbsorbPointer(
+        child: TextFormField(
+          controller: controller,
+          readOnly: true,
+          decoration: InputDecoration(
+            labelText: label,
+            hintText: hintText,
+            suffixText: suffixText,
+            border: const OutlineInputBorder(),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+            filled: true,
+            fillColor: const Color(0xFFF0F4FF),
+            suffixIcon: const Padding(
+              padding: EdgeInsets.only(right: 8),
+              child: Icon(Icons.dialpad, size: 28, color: _kAccent),
+            ),
+          ),
+          style: const TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: _kPrimary,
+          ),
+          validator: validator,
         ),
-      ],
-      decoration: InputDecoration(
-        labelText: label,
-        hintText: hintText,
-        suffixText: suffixText,
-        border: const OutlineInputBorder(),
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-        // Icône qui ouvre le numpad tactile
-        suffixIcon: IconButton(
-          icon: const Icon(Icons.dialpad, size: 20, color: Color(0xFF2D3561)),
-          tooltip: 'Numpad',
-          onPressed: () async {
-            final result = await showNumpadInput(
-              context,
-              initialValue: controller.text.replaceAll(',', '.'),
-              decimal: decimal,
-              label: label,
-            );
-            if (result != null) {
-              controller.text = result;
-            }
-          },
-        ),
       ),
-      validator: validator,
-      // Normalise virgule → point à la saisie PC
-      onChanged: decimal
-          ? (v) {
-              if (v.contains(',')) {
-                final selection = controller.selection;
-                controller.value = controller.value.copyWith(
-                  text: v.replaceAll(',', '.'),
-                  selection: selection,
-                );
-              }
-            }
-          : null,
     );
   }
 }
